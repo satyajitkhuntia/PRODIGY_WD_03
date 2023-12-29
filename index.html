@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe Game</title>
+  <style>
+
+    /* Reset default styles and set background color */
+    * { padding: 0; margin: 0; }
+    .background {
+         background-color: lightblue; 
+         height: 1000px;
+        }
+
+    /* Center the title and make it bigger */
+    .title { text-align: center; font-size: 3rem; }
+
+    /* Center the display and make it smaller */
+    .display { text-align: center; font-size: 2rem; }
+
+    /* Use CSS grid to create the board */
+    .container { 
+      display: grid; 
+      grid-template-columns: 33% 33% 33%; 
+      grid-template-rows: 33% 33% 33%; 
+      width: 600px; 
+      height: 600px; 
+      margin: 0 auto; 
+    }
+
+    /* Style the tiles with borders and cursor */
+    .tile { 
+      border: 2px solid black; 
+      cursor: pointer; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    /* Colorize the X and O players */
+    .playerX { color: red; }
+    .playerO { color: green; }
+
+    /* Hide the announcer by default */
+    .announcer { 
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    /* Winner display styles */
+    .winner { 
+      font-size: 4rem; 
+      font-weight: bold; 
+      text-align: center; 
+      margin-top: 20px;
+    }
+    .winnerX { color: #FF6347; } /* Red color for X */
+    .winnerO { color: #4682B4; } /* Blue color for O */
+
+    /* Styles for the control buttons */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .controls button {
+      font-size: 2rem;
+      padding: 10px;
+      margin-bottom: 10px;
+      width: 150px;
+      background-color: #6495ED; /* Cornflower blue */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main class="background">
+    <section class="title"><h1>Tic Tac Toe</h1></section>
+    <section class="display">Player <span class="display-player playerX">X</span>'s turn</section>
+    <section class="controls">
+      <button id="mode">Single Player / Double Player</button>
+      <button id="reset">Reset</button>
+    </section>
+    <section class="container">
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+    </section>
+    <section class="display announcer hide">
+      <div class="winner"></div>
+    </section>
+  </main>
+
+  <script>
+    const tiles = document.querySelectorAll(".tile");
+    const display = document.querySelector(".display");
+    const displayPlayer = document.querySelector(".display-player");
+    const announcer = document.querySelector(".announcer");
+    const modeButton = document.getElementById("mode");
+    const resetButton = document.getElementById("reset");
+    let currentPlayer = "X";
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let gameOver = false;
+    let singlePlayer = true;
+    const WINNING_COMBINATIONS = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    tiles.forEach((tile, index) => {
+      tile.addEventListener("click", () => handleUserClick(index));
+    });
+    modeButton.addEventListener("click", handleModeClick);
+    resetButton.addEventListener("click", handleResetClick);
+
+    function handleUserClick(index) {
+      if (gameOver || board[index] !== "") return;
+      board[index] = currentPlayer;
+      tiles[index].textContent = currentPlayer;
+      checkGameOver();
+      if (!gameOver) switchPlayer();
+      if (!gameOver && singlePlayer) makeAIMove();
+    }
+
+    function handleModeClick() {
+      singlePlayer = !singlePlayer;
+      modeButton.textContent = singlePlayer ? "Double Player" : "Single Player";
+      handleResetClick();
+    }
+
+    function handleResetClick() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      tiles.forEach((tile) => { tile.textContent = ""; });
+      currentPlayer = "X";
+      displayPlayer.textContent = currentPlayer;
+      displayPlayer.classList.remove("playerO");
+      displayPlayer.classList.add("playerX");
+      gameOver = false;
+      announcer.classList.add("hide");
+      document.querySelector(".winner").textContent = ""; // Clear winner display
+    }
+
+    function switchPlayer() {
+      if (currentPlayer === "X") {
+        currentPlayer = "O";
+        displayPlayer.textContent = currentPlayer;
+        displayPlayer.classList.remove("playerX");
+        displayPlayer.classList.add("playerO");
+      } else {
+        currentPlayer = "X";
+        displayPlayer.textContent = currentPlayer;
+        displayPlayer.classList.remove("playerO");
+        displayPlayer.classList.add("playerX");
+      }
+    }
+
+    function checkGameOver() {
+      for (let combination of WINNING_COMBINATIONS) {
+        let [a, b, c] = combination.map((index) => board[index]);
+        if (a === b && b === c && a !== "") {
+          gameOver = true;
+          announcer.classList.remove("hide");
+          let winnerDisplay = document.querySelector(".winner");
+          winnerDisplay.textContent = `${currentPlayer} wins!`;
+          winnerDisplay.classList.add(currentPlayer === "X" ? "winnerX" : "winnerO");
+          break;
+        }
+      }
+      if (board.every((value) => value !== "") && !gameOver) {
+        gameOver = true;
+        announcer.classList.remove("hide");
+        let winnerDisplay = document.querySelector(".winner");
+        winnerDisplay.textContent = "It's a draw!";
+      }
+    }
+
+    function makeAIMove() {
+      let emptyTiles = board.map((value, index) => (value === "" ? index : -1)).filter((index) => index !== -1);
+      if (emptyTiles.length === 0) return;
+      let randomIndex = Math.floor(Math.random() * emptyTiles.length);
+      let chosenIndex = emptyTiles[randomIndex];
+      board[chosenIndex] = currentPlayer;
+      tiles[chosenIndex].textContent = currentPlayer;
+      checkGameOver();
+      if (!gameOver) switchPlayer();
+    }
+  </script>
+</body>
+</html>
